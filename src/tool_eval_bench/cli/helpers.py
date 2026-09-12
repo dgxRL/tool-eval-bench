@@ -11,7 +11,7 @@ import json
 import sys
 from typing import Any
 
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 
 from tool_eval_bench.utils.ids import build_config_fingerprint
 from tool_eval_bench.utils.urls import endpoint_identity
@@ -19,8 +19,14 @@ from tool_eval_bench.utils.urls import redact_url as _redact_url
 
 
 def load_dotenv_file() -> None:
-    """Load .env file into os.environ (does not overwrite existing vars)."""
-    load_dotenv(override=False)
+    """Load .env file into os.environ (does not overwrite existing vars).
+
+    Search from the current working directory upward.  The default
+    ``find_dotenv()`` walks up from the *calling module's* directory, which
+    for a non-editable install (site-packages) never reaches the project's
+    ``.env``.  ``usecwd=True`` anchors the search on the user's project.
+    """
+    load_dotenv(find_dotenv(usecwd=True) or None, override=False)
 
 
 def redact_url(url: str) -> str:

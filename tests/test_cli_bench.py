@@ -568,3 +568,33 @@ class TestArgumentValidation:
         parser = _make_parser()
         args = parser.parse_args(["--categories", "Z"])
         assert args.categories == ["Z"]
+
+
+class TestLoadDotenvFile:
+    def test_resolves_env_from_working_directory(self, tmp_path, monkeypatch) -> None:
+        """A project .env is found even when the package is installed elsewhere."""
+        from tool_eval_bench.cli.helpers import load_dotenv_file
+
+        (tmp_path / ".env").write_text("TOOL_EVAL_BASE_URL=http://mydgx0:8888\n")
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.delenv("TOOL_EVAL_BASE_URL", raising=False)
+
+        load_dotenv_file()
+
+        import os
+
+        assert os.environ["TOOL_EVAL_BASE_URL"] == "http://mydgx0:8888"
+
+    def test_existing_env_var_wins(self, tmp_path, monkeypatch) -> None:
+        """Pre-set environment variables are never overridden by .env."""
+        from tool_eval_bench.cli.helpers import load_dotenv_file
+
+        (tmp_path / ".env").write_text("TOOL_EVAL_BASE_URL=http://from-dotenv:1\n")
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setenv("TOOL_EVAL_BASE_URL", "http://from-env:2")
+
+        load_dotenv_file()
+
+        import os
+
+        assert os.environ["TOOL_EVAL_BASE_URL"] == "http://from-env:2"
